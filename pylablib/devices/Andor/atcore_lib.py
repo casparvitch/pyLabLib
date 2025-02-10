@@ -12,7 +12,7 @@ from ..utils import load_lib
 import ctypes
 import warnings
 import numpy as np
-
+import platform 
 
 
 class AndorSDK3LibError(AndorError):
@@ -56,7 +56,10 @@ class AndorSDK3Lib:
         error_message=( "The library is automatically supplied with Andor Solis software or Andor SDK3 software;\n"+
                         load_lib.par_error_message.format("andor_sdk3")+
                         "\nAdditional required libraries: atblkbx.dll, atcl_bitflow.dll, atdevapogee.dll, atdevregcam.dll, atusb_libusb.dll, atusb_libusb10.dll (distributed together with the main library)")
-        self.lib=load_lib.load_lib("atcore.dll",locations=("parameter/andor_sdk3",solis_path,sdk3_path,"global"),error_message=error_message,locally=True,call_conv="stdcall")
+        if platform.system()!="Windows":
+            self.lib=load_lib.load_lib("libatcore.so",locations=("parameter/andor_sdk3",solis_path,sdk3_path,"global"),error_message=error_message,locally=True,call_conv="cdecl")
+        else:
+            self.lib=load_lib.load_lib("atcore.dll",locations=("parameter/andor_sdk3",solis_path,sdk3_path,"global"),error_message=error_message,locally=True,call_conv="stdcall")
         lib=self.lib
         define_functions(lib)
 
@@ -132,7 +135,10 @@ class AndorSDK3Lib:
         self.AT_Command=wrapper(lib.AT_Command)
 
         # typedef int (AT_EXP_CONV *FeatureCallback)(AT_H Hndl, const AT_WC* Feature, void* Context);
-        self.c_callback=ctypes.WINFUNCTYPE(ctypes.c_int,AT_H,AT_pWC,ctypes.c_void_p)
+        if platform.system()!="Windows":
+            self.c_callback=ctypes.CFUNCTYPE(ctypes.c_int,AT_H,AT_pWC,ctypes.c_void_p)
+        else:
+            self.c_callback=ctypes.WINFUNCTYPE(ctypes.c_int,AT_H,AT_pWC,ctypes.c_void_p)
         #  ctypes.c_int AT_RegisterFeatureCallback(AT_H Hndl, ctypes.POINTER(AT_WC) Feature, FeatureCallback EvCallback, ctypes.c_void_p Context)
         self.AT_RegisterFeatureCallback_lib=wrapper(lib.AT_RegisterFeatureCallback)
         #  ctypes.c_int AT_UnregisterFeatureCallback(AT_H Hndl, ctypes.POINTER(AT_WC) Feature, FeatureCallback EvCallback, ctypes.c_void_p Context)
