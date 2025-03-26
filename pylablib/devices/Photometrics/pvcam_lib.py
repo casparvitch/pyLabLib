@@ -64,9 +64,12 @@ class PvcamLib:
             return
 
         error_message="The library is supplied with Photometrics PVCAM software\n"+load_lib.par_error_message.format("pvcam")
-        archbit=platform.architecture()[0][:2]
-        lib_name="pvcam{}.dll".format(archbit)
-        self.lib=load_lib.load_lib(lib_name,locations=("parameter/pvcam","global"),error_message=error_message,call_conv="stdcall")
+        if platform.system()!="Windows":
+            self.lib = load_lib.load_lib("libpvcam.so", locations=("parameter/pvcam", "global"), error_message=error_message, call_conv="cdecl")
+        else:
+            archbit=platform.architecture()[0][:2]
+            lib_name="pvcam{}.dll".format(archbit)
+            self.lib=load_lib.load_lib(lib_name,locations=("parameter/pvcam","global"),error_message=error_message,call_conv="stdcall")
         lib=self.lib
         define_functions(lib)
 
@@ -157,7 +160,11 @@ class PvcamLib:
         #  rs_bool pl_cam_deregister_callback(int16 hcam, int32 callback_event)
         self.pl_cam_deregister_callback=wrapper(lib.pl_cam_deregister_callback)
         # typedef void (PV_DECL *PL_CALLBACK_SIG_EX3)(const FRAME_INFO* pFrameInfo, void* pContext);
-        self.c_callback=ctypes.WINFUNCTYPE(None,pvcam_defs.PFRAME_INFO,ctypes.c_void_p)
+        # self.c_callback=ctypes.WINFUNCTYPE(None,pvcam_defs.PFRAME_INFO,ctypes.c_void_p)
+        if platform.system()!="Windows":
+            self.c_callback=ctypes.CFUNCTYPE(None,pvcam_defs.PFRAME_INFO,ctypes.c_void_p)
+        else:
+            self.c_callback=ctypes.WINFUNCTYPE(None,pvcam_defs.PFRAME_INFO,ctypes.c_void_p)
 
         #  rs_bool pl_pp_reset(int16 hcam)
         self.pl_pp_reset=wrapper(lib.pl_pp_reset)
